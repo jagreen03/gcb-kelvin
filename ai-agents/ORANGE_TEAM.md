@@ -31,11 +31,16 @@ the closing measurement.
 
 ## Hard rules
 
-1. **Do not re-attempt ngspice's OSDI `.noise` on ASAP7.** Already
-   confirmed broken: it returns zero, and its `trnoise` scaling showed a
-   ~50× spread against a known `kT/C` reference (64.4 µV expected; 96 µV
-   / 3.2 mV / 3.9 mV returned at three timesteps). Re-running this is not
-   a new measurement, it's repeating a known-bad result.
+1. **Do not expect a different result from ngspice's OSDI `.noise` on
+   ASAP7** — confirmed broken twice now (re-verified 2026-09-13, see
+   `FINDINGS-2026-09-13.md`): it returns exactly zero, and its
+   `trnoise` scaling showed a ~50× spread against a known `kT/C`
+   reference. Re-running `.noise`/`trnoise` itself is not a new
+   measurement. **This is different from checking whether the real
+   toolchain is reachable at all before assuming it isn't** — that
+   check is how `FINDINGS-2026-09-13.md`'s `.op`/`.ac` angle got
+   found. Don't skip verifying access; don't re-run the specific
+   already-failed directives expecting a new answer.
 2. **Do not re-attempt building Xyce no-root.** Already confirmed
    blocked: conda-forge Trilinos 16.2 is missing `NOX_ENABLE_LOCA`,
    `EpetraExt_BUILD_BTF`, and Isorropia/Zoltan; a from-source Trilinos
@@ -65,11 +70,32 @@ the closing measurement.
   outside that band is a real, reportable disagreement, not noise in
   the measurement.
 
-## MEASUREMENT STATE — V1 (not yet run)
+## MEASUREMENT STATE — V2 (2026-09-13: no Spectre access; one new unbuilt path found)
 
-**No Spectre access has been confirmed or denied for this repo yet.**
-This is the first thing a new session here should establish — not
-assumed either way from this prompt.
+**Spectre access: confirmed NOT present.** No commercial simulator is
+reachable from this host. This repo's core closure (a real Spectre
+histogram) remains unstarted.
+
+**But check for WSL before assuming nothing else is reachable** — this
+session found `wsl.exe` available with the real, already-built
+`ngspice-44`+OSDI+`bsimcmg.osdi`+ASAP7 toolchain
+(`gcb-spec/docs/spice_setup.md`) genuinely working at
+`~/gcb_spice/tb/`. Using it: re-confirmed `.noise` still returns
+exactly zero against the real BSIM-CMG device (not assumed stale), and
+found a new, previously-unrecorded angle — `.op`/`.ac` small-signal
+parameter extraction (`gm`, `gds`, `cgg`) **does** work on the real
+device even though `.noise` doesn't, opening an unbuilt manual
+noise-injection path using the real device's real gm instead of a
+BSIM4 surrogate's. See `FINDINGS-2026-09-13.md` for the full detail,
+including what this does and does not solve (it does NOT close the
+core question — no comparator-circuit noise number was computed).
+
+**Next real action**: either get real Spectre access (unchanged), or
+have a session with real analog-IC-noise-design expertise attempt the
+manual noise-injection build `FINDINGS-2026-09-13.md` describes —
+genuinely untried, not ruled out by the existing toolchain survey
+(which ruled out `.noise`/`trnoise` specifically, not manual
+small-signal noise synthesis).
 
 ## Evidence files
 
@@ -78,7 +104,10 @@ detail, toolchain-limit detail, fallback design),
 `gcb-papers/data/readout/spice/SPICE_RESULTS_V3.md` §7/§9/§11,
 `gcb-spec/docs/adr/ADR-005-Single-Slope-Readout.md`,
 `gcb-wiki/DECISION_LEDGER.md` (`readout.comparator.noise.spectre-histogram`,
-`readout.comparator.preamp.gmc-fallback`).
+`readout.comparator.preamp.gmc-fallback`),
+`gcb-spec/docs/spice_setup.md` (the real toolchain this session found
+reachable via WSL), `FINDINGS-2026-09-13.md` (this repo, the `.op`/`.ac`
+finding).
 
 ## How you work
 

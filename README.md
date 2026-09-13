@@ -5,6 +5,16 @@ that has no access to this repo?** Paste
 [`EXTERNAL_AI_BRIEFING.md`](EXTERNAL_AI_BRIEFING.md) — it's
 self-contained, no repo access required.
 
+**Progress, 2026-09-13**: see
+[`FINDINGS-2026-09-13.md`](FINDINGS-2026-09-13.md). Still no Spectre
+access — but a real WSL-based ngspice/OSDI toolchain was found
+reachable, `.noise`'s known failure was re-confirmed (not assumed
+stale), and one genuinely new, unbuilt path was found: real small-
+signal parameters (`gm`/`gds`) extract cleanly from the actual target
+device even though internal noise synthesis doesn't. **The core
+question below is still open** — no comparator-circuit noise number
+exists yet either way.
+
 **One isolated problem: one number, from one tool this program doesn't
 currently have access to, decides whether the analog readout is
 `CONDITIONAL GO` or `GO`.**

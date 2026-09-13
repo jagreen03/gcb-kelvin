@@ -86,16 +86,39 @@ the resistor loads are pinned to a fixed voltage drop, so `R_L ∝
 1/I_tail` and bandwidth grows faster than gain). Documented, never
 built — only needed if the real noise number exceeds 55 µV.
 
+## Update, 2026-09-13 — one angle below is confirmed viable, not yet built
+
+Real access to the actual `ngspice`+OSDI+BSIM-CMG toolchain was found
+and used this session (not Spectre — still no commercial-simulator
+access). Two things confirmed: `.noise` still returns exactly zero
+against the real device (re-checked, not assumed stale), **and**
+`.op`/`.ac` small-signal parameter extraction (`gm`, `gds`, `cgg`)
+**does work** against the real device — e.g. a single `nmos_lvt`
+(`nfin=8`, `l=24n`) at a representative bias gave real `gm =
+7.79e-4 S`, `gds = 3.37e-5 S`. **Nobody has yet built the manual
+noise-injection model this enables** (inject a `4kTγ/gm` current-
+noise source at each transistor using these real, device-extracted
+values instead of a BSIM4 surrogate's gm-match, propagate via `.AC`,
+integrate by hand) — that's the first bullet below, now confirmed
+buildable rather than purely speculative. Don't re-derive whether
+`.op`/`.ac` works on OSDI models — it does; spend effort on actually
+building the multi-transistor model instead.
+
 ## The actual question to help with
 
 **Is there any real, honest way to narrow the ±16% BSIM4-surrogate
 uncertainty band using open-source tools** (not Spectre, not any
 licensed commercial simulator), given everything already tried above?
-Some angles worth exploring, none pre-validated:
-- Is there a way to get a usable noise estimate from a *different*
-  open noise-analysis method against the real BSIM-CMG model (not
-  `.noise`, not `trnoise`) — e.g., a Monte-Carlo ensemble of DC/AC
-  small-signal runs combined analytically?
+Some angles worth exploring:
+- **Confirmed buildable, not yet built**: a manual noise-injection
+  model using the real device's own extracted `gm`/`gds` (see the
+  update above) for the full 2-stage chopped/auto-zeroed preamp +
+  StrongARM latch — not a single transistor. This needs real
+  analog-IC noise-design judgment (noise source placement/correlation
+  per node, modeling the chopper's effect on 1/f content, the latch's
+  regeneration noise) — a circuit-design task, not a scripting one.
+  The flicker/mismatch proxy (`γ_eff`, `K_Fn`, `A_VT`) is still an
+  assumed literature value either way; ASAP7 ships no real one.
 - Is the ~50× `trnoise` spread itself diagnosable/fixable (a known
   `ngspice`+OSDI integration bug, a seeding issue, a time-step
   artifact) rather than a fundamental limitation?
