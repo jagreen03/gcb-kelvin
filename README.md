@@ -1,5 +1,10 @@
 # gcb-kelvin
 
+**Want to explore this with another AI chat (ChatGPT, Gemini, etc.)
+that has no access to this repo?** Paste
+[`EXTERNAL_AI_BRIEFING.md`](EXTERNAL_AI_BRIEFING.md) — it's
+self-contained, no repo access required.
+
 **One isolated problem: one number, from one tool this program doesn't
 currently have access to, decides whether the analog readout is
 `CONDITIONAL GO` or `GO`.**
