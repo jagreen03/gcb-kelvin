@@ -70,6 +70,34 @@ the closing measurement.
   outside that band is a real, reportable disagreement, not noise in
   the measurement.
 
+## MEASUREMENT STATE — V3 (2026-09-13: first analytical step on the manual noise-injection path — encouraging, not a closure)
+
+**Spectre access still confirmed NOT present** — unchanged from V2, no
+new attempt made this pass.
+
+**New this pass**: a single-transistor analytical sanity check on the
+manual noise-injection path V2 identified (see
+`FINDINGS-2026-09-13-manual-noise-v1.md`). Two closed-form models for
+where the noise-integration bandwidth actually comes from (the
+transistor's own pole vs. the 20 ns gate window) give sharply different
+answers — the pole-limited model lands within +11% of the 53 µV
+surrogate at a physically ordinary γ≈2/3, the gate-limited model needs
+an implausible γ≈5.3. **Read as a real, encouraging signal that the
+pole-limited picture is the physically appropriate one for this
+device/load, and that the manual-noise-injection approach is worth the
+larger `.ac`-simulation build** — not as evidence toward closing the
+core question, which still requires either real Spectre access or the
+full multi-transistor (2-stage + chopper + latch) model this pass does
+not attempt. `DECISION_LEDGER.md` **unchanged** — `readout.comparator.
+noise.spectre-histogram` stays `Open`.
+
+**Next real action, refined from V2**: build the actual `.ac`-based
+noise-source propagation for just the first preamp stage (a smaller,
+well-scoped increment than the full multi-transistor model V2
+recommended) — this pass's pole-vs-gate ambiguity is exactly what a
+real `.ac` sweep settles cleanly, and it's the natural next increment
+before the full circuit.
+
 ## MEASUREMENT STATE — V2 (2026-09-13: no Spectre access; one new unbuilt path found)
 
 **Spectre access: confirmed NOT present.** No commercial simulator is
