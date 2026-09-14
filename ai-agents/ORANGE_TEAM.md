@@ -103,11 +103,25 @@ extraction (779 µS) by roughly 2×, unreconciled. See
 `FINDINGS-2026-09-13-manual-noise-v1.md`'s correction section for full
 detail.
 
-**Next real action, refined again**: reconcile the `g_m` discrepancy
-first (device-flavor or bias-point mismatch, not yet diagnosed), then
-re-run `comparator_noise.py` with the real BSIM-CMG-extracted `g_m`/
-`R_L` in place of its current proxy values — a smaller, better-grounded
-increment than building any new model from scratch.
+**Correction 2, 2026-09-14**: the `g_m` discrepancy is resolved, not
+diagnosed as a device difference — re-running the extraction deck at
+all six `MEAS` bias points found roughly half deterministically
+converge to a non-physical operating point (`v(op)` in the millions of
+volts), and the original 779 µS figure was never checked against that
+before being trusted. Every physically-plausible re-run landed in
+`comparator_noise.py`'s own 167–395 µS range. See
+`FINDINGS-2026-09-13-manual-noise-v1.md`'s Correction 2 for full
+detail, including a new practical rule (`0 < v(op) < V_dd` must be
+checked before trusting any future `.op`/`.ac` extraction on this
+path).
+
+**Next real action, refined again**: re-run `comparator_noise.py`'s
+real bias points with a physical-plausibility filter applied at
+extraction time (the missing check this pass found), confirm the
+`MEAS` table's own values hold up, then revisit whether `γ=1.0` vs.
+BSIM4's `γ_eff≈1.4` is the real remaining gap worth narrowing — not a
+`g_m` reconciliation, which this pass found was never the real
+problem.
 
 ## MEASUREMENT STATE — V2 (2026-09-13: no Spectre access; one new unbuilt path found)
 

@@ -205,3 +205,61 @@ re-running this existing script with the real BSIM-CMG-extracted `g_m`/
 `R_L` in place of its current proxy `MEAS` values**, which is a much
 smaller, better-grounded increment than anything this document or
 `FINDINGS-2026-09-13.md` proposed building new.
+
+---
+
+## Correction 2, 2026-09-14 — the `g_m` discrepancy is very likely a non-converged-solve artifact, not a real device/bias difference
+
+**Checked directly, not assumed**: re-ran the exact `.op`-extraction
+deck methodology (`Itail` as an ideal DC current source into
+`nmos_lvt nfin=8 l=24n`, `Vg=0.42 V`, resistor load) across the same
+six `I_tail` points `comparator_noise.py`'s own `MEAS` table uses
+(15/22/30/40/50/60 µA), both as the original swept `alter`+`op` loop
+(`~/gcb_spice/tb/_gm.cir`) and as six freshly generated, fully
+independent single-point decks with `.options gminsteps=60` added.
+
+**Real result: roughly half of all six points, in both methodologies,
+converge to a physically impossible operating point** — `v(op)` in the
+**millions of volts** (e.g. `9.13e6 V`) or negative, with correspondingly
+nonsensical `g_m` (often negative, `~1e-13 S`) — while the other half
+land at plausible values (`v(op)` between 0 and 0.8 V, `g_m` in the
+**320–375 µS** range) **broadly consistent with `comparator_noise.py`'s
+own `MEAS` table** (167–395 µS across the same sweep), not with
+`FINDINGS-2026-09-13.md`'s reported 779 µS. **Re-ran the 30 µA failing
+point three independent times — identical garbage output every time**,
+confirming this is a deterministic convergence failure of this exact
+netlist/bias combination, not solver-state noise.
+
+**The straightforward reading**: `FINDINGS-2026-09-13.md`'s original
+779 µS figure was tagged `[M]easured-in-sim, confirmed` without
+checking `v(op)` for physical plausibility (it should read between 0 V
+and the 0.8 V rail) — exactly the failure mode this pass now finds
+affects roughly half of all attempts at this bias with this exact OSDI
+netlist shape. **The ~2× "discrepancy" flagged in Correction 1 above
+most likely never existed as a real device- or bias-point difference —
+it was very likely one unchecked non-converged solve being compared
+against a table of values that happened to be real.** Not stated as
+certain (the original failing deck/run that produced 779 µS was not
+preserved to re-run verbatim), but the pattern — half of all
+independent attempts at this exact bias fail the same deterministic
+way, and every successful attempt lands near `comparator_noise.py`'s
+own real range — makes "real ~2× device/bias difference" the less
+likely explanation of the two, not the more likely one as Correction 1
+treated it.
+
+**Practical rule this adds, going forward**: any future `.op`/`.ac`
+extraction on this OSDI/BSIM-CMG path must check `0 < v(op) < V_dd`
+(or the equivalent physical-plausibility bound for the node being
+read) before trusting `gm`/`gds` from it — this program did not have
+that check anywhere before this pass, and it would have caught the
+779 µS figure immediately rather than after a second, separate
+investigation.
+
+**Direct relevance to `GCB-045`** (filed separately, low priority):
+this is a second, concrete instance of internal medium-effort checking
+resolving a question that was about to be handed to an external
+frontier AI as a "diagnose this real discrepancy" task (see the
+rewritten `gcb-kelvin` prompt in `gcb-wiki/appendices/
+orange-team-collaborator.md`) — the actual cause was a missing
+sanity check, found by re-running the original deck, not a deep
+device-physics puzzle requiring frontier-level reasoning at all.
