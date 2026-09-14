@@ -91,12 +91,23 @@ full multi-transistor (2-stage + chopper + latch) model this pass does
 not attempt. `DECISION_LEDGER.md` **unchanged** — `readout.comparator.
 noise.spectre-histogram` stays `Open`.
 
-**Next real action, refined from V2**: build the actual `.ac`-based
-noise-source propagation for just the first preamp stage (a smaller,
-well-scoped increment than the full multi-transistor model V2
-recommended) — this pass's pole-vs-gate ambiguity is exactly what a
-real `.ac` sweep settles cleanly, and it's the natural next increment
-before the full circuit.
+**Correction, same day**: Model A above used the wrong load topology
+(assumed a bare `gm/C_L` pole; the real stage is resistively loaded,
+`NBW = 1/(4·R_L·C_L)`). More importantly: `gcb-spec/models/readout/
+spice/harness/comparator_noise.py` — a real, already-built multi-stage
+analytic noise roll-up for this exact circuit, missed until this
+correction — already does what V2's "next real action" proposed
+building. It found a 53 µV target via `γ_eff≈1.4`; its own `g_m`
+measurements (167–395 µS) disagree with this session's direct `.op`
+extraction (779 µS) by roughly 2×, unreconciled. See
+`FINDINGS-2026-09-13-manual-noise-v1.md`'s correction section for full
+detail.
+
+**Next real action, refined again**: reconcile the `g_m` discrepancy
+first (device-flavor or bias-point mismatch, not yet diagnosed), then
+re-run `comparator_noise.py` with the real BSIM-CMG-extracted `g_m`/
+`R_L` in place of its current proxy values — a smaller, better-grounded
+increment than building any new model from scratch.
 
 ## MEASUREMENT STATE — V2 (2026-09-13: no Spectre access; one new unbuilt path found)
 

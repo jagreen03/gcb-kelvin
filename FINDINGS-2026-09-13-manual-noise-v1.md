@@ -141,3 +141,67 @@ only.
 `gcb-spec/ai-agents/AGENT_02_ANALOG_EVALUATOR.md` (the 53 µV surrogate
 result and its CONDITIONAL status), `gcb-papers/data/readout/spice/
 SPICE_RESULTS_V3.md` §7/§9/§11.
+
+---
+
+## Correction, 2026-09-13 (later same day) — Model A used the wrong load topology; a real, already-built rollup script exists and was missed
+
+**What this document originally said (above, unedited):** Model A
+assumed a single-pole bandwidth `f_3dB = gm/(2π·C_L)` — i.e. the
+transistor's own transconductance driving a purely capacitive load —
+giving 155 MHz and a 58.75 µV estimate (+11% vs. the 53 µV surrogate,
+read as "encouraging for the pole-limited picture").
+
+**What's actually true, found while tracing this further for the
+`orange-team-collaborator.md` wiki refresh:** the real comparator stage
+is **resistively loaded**, not capacitively/transconductance-loaded.
+`gcb-spec/models/readout/spice/harness/comparator_noise.py`
+`[checked, full read]` — a real, already-built, already-committed
+analytic noise roll-up for exactly this circuit (2-stage chopped/AZ
+preamp + StrongARM latch) that this repo's earlier sessions did not
+surface — computes noise bandwidth as `NBW = 1/(4·R_L·C_L)`, a
+resistor-load pole, not `gm/C_L`. At its `I_tail = 30 µA` design point
+(`R_L = 26 667 Ω`, `C_L = 0.8 pF`): `NBW = 11.7 MHz` — **re-derived
+independently this pass and matches the script's own printed output
+exactly** (`python`, not assumed). That is close to this document's
+**Model B** (gate-window-limited, 25 MHz ENBW), not Model A. **Model
+A's 155 MHz pole does not describe this circuit** — it was the right
+formula for the wrong topology (a bare common-source stage with no
+explicit load resistor), not this design's actual resistively-loaded
+stage. The single-transistor estimate above should be read as a
+topology-exploration exercise, not a result that correctly models this
+circuit.
+
+**A second, more consequential finding from the same script**: its own
+`MEAS` table — real SPICE-measured `g_m` at ASAP7, same device class
+(`nfin=8`, `L=24n`) this session's `FINDINGS-2026-09-13.md` extracted
+from — gives `g_m` = 167–395 µS across its `I_tail` = 15–60 µA sweep.
+This session's own direct `.op` extraction (`FINDINGS-2026-09-13.md`)
+got **`g_m` = 779 µS** — roughly **2× above even the script's highest-
+current (60 µA) point.** `[new finding, unverified]` — not yet
+reconciled. Candidate causes, none confirmed: (a) a different ASAP7
+device flavor (the script's `MEAS` comment doesn't state LVT/RVT/SLVT;
+this session's extraction used `nmos_lvt` explicitly — LVT devices run
+higher `g_m` at a given bias, plausible but not quantitatively checked
+against a 2× gap); (b) a different bias point / `V_gs` overdrive, since
+this session's `.op` deck was not run at any of the script's six
+specific `I_tail` values; (c) a unit or extraction-script discrepancy
+in one of the two independent measurements. **Not resolved here** —
+flagged as the real next diagnostic step, ahead of any further
+noise-model building, since building on an unreconciled 2× `g_m`
+discrepancy would make any downstream number unreliable regardless of
+which bandwidth model is correct.
+
+**Why this matters beyond just fixing one number**: `comparator_noise.
+py` already IS the "manual multi-transistor noise-injection model"
+`FINDINGS-2026-09-13.md` recommended building — thermal + residual 1/f
+(with real chopper fold-back) + latch contribution, two real stages,
+already coded and already producing a number (45.8 µV at `γ=1.0`,
+30 µA) close to the 53 µV BSIM4-surrogate total (the gap explained in
+`SPICE_RESULTS_V3.md` §9 by `γ_eff≈1.4` read from BSIM4, vs. the
+script's assumed `γ=1.0`). **The real next step is not building a new
+model from scratch — it's reconciling the `g_m` discrepancy above, then
+re-running this existing script with the real BSIM-CMG-extracted `g_m`/
+`R_L` in place of its current proxy `MEAS` values**, which is a much
+smaller, better-grounded increment than anything this document or
+`FINDINGS-2026-09-13.md` proposed building new.
